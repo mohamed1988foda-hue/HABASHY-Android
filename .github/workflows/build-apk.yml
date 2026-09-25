@@ -18,7 +18,8 @@ jobs:
         run: |
           unzip -q HABASHY_Android_Project_V18.zip -d extracted
 
-      - name: Locate project      
+            - name: Locate project
+        run: |
           SETTINGS=$(find extracted -type f -name "settings.gradle" | head -1)
 
           if [ -z "$SETTINGS" ]; then
@@ -33,9 +34,7 @@ jobs:
 
           PROJECT_DIR=$(dirname "$SETTINGS")
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-
           echo "Project directory: $PROJECT_DIR"
-      - name: Rebuild MainActivity
         run: |
           FILE="$PROJECT_DIR/app/src/main/java/com/habashy/catalog/MainActivity.java"
 
