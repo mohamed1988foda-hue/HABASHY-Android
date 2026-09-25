@@ -97,17 +97,20 @@ jobs:
           cat > "$FILE" <<'EOF'
           <!DOCTYPE html>
           <html lang="ar" dir="rtl">
+
           <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>الحبشي - فرع أبيس</title>
 
           <style>
+
           * {
               box-sizing: border-box;
           }
 
-          html, body {
+          html,
+          body {
               margin: 0;
               padding: 0;
               width: 100%;
@@ -133,32 +136,3 @@ jobs:
               font-weight: 900;
               margin-bottom: 3px;
           }
-
-          .brand-en {
-              font-size: 22px;
-              font-weight: 800;
-              letter-spacing: 4px;
-              color: #e7c66b;
-          }
-
-          .subtitle {
-              font-size: 17px;
-              font-weight: 700;
-              margin-top: 10px;
-          }
-
-          .branch {
-              display: inline-block;
-              margin-top: 12px;
-              padding: 8px 18px;
-              border: 1px solid rgba(231,198,107,.65);
-              border-radius: 30px;
-              color: #f4d783;
-              font-size: 15px;
-              font-weight: 800;
-          }
-
-          .container {
-              width: min(1100px, calc(100% - 28px));
-              margin: 0 auto;
-              padding: 20
