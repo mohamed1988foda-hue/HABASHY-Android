@@ -152,6 +152,8 @@ jobs:
           document.addEventListener("DOMContentLoaded",async()=>{
            await loadSections();await checkAdmin();await track("app_open");home();
           });
+          EOF
+
       - name: Update MainActivity
         run: |
           cat > "$PROJECT_DIR/app/src/main/java/com/habashy/catalog/MainActivity.java" <<'EOF'
