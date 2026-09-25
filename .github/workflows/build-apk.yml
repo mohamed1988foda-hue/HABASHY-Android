@@ -1,4 +1,4 @@
-name: Build HABASHY APK
+name: Build HABASHY APK V20
 
 on:
   push:
@@ -15,94 +15,217 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Extract Android project
-        run: unzip -q HABASHY_Android_Project_V18.zip -d extracted
+        run: |
+          unzip -q HABASHY_Android_Project_V18.zip -d extracted
 
       - name: Locate project
         run: |
-          SETTINGS=$(find extracted -type f \( -name settings.gradle -o -name settings.gradle.kts \) | head -1)
+          SETTINGS=$(find extracted -type f -name settings.gradle -o -name settings.gradle.kts | head -1)
+
           if [ -z "$SETTINGS" ]; then
             echo "settings.gradle not found"
             exit 1
           fi
+
           PROJECT_DIR=$(dirname "$SETTINGS")
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-      - name: Fix Java source
+
+          echo "Project directory: $PROJECT_DIR"
+
+      - name: Rebuild MainActivity
         run: |
           FILE="$PROJECT_DIR/app/src/main/java/com/habashy/catalog/MainActivity.java"
-          sed -i ':a;N;$!ba;s/تطبيق الحبشي HABASHY – فرع أبـيـس\nكتالوج ومنتجات وطلبات/تطبيق الحبشي HABASHY – فرع أبـيـس\\\\nكتالوج ومنتجات وطلبات/' "$FILE"
-      - name: Remove share app section
+
+          cat > "$FILE" <<'EOF'
+          package com.habashy.catalog;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.graphics.Color;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+
+          public class MainActivity extends Activity {
+
+              private WebView webView;
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+
+                  getWindow().setStatusBarColor(Color.rgb(16, 24, 39));
+
+                  webView = new WebView(this);
+                  webView.setBackgroundColor(Color.rgb(245, 246, 248));
+
+                  WebSettings settings = webView.getSettings();
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  settings.setBuiltInZoomControls(false);
+                  settings.setDisplayZoomControls(false);
+                  settings.setLoadWithOverviewMode(false);
+                  settings.setUseWideViewPort(true);
+
+                  webView.setWebViewClient(new WebViewClient());
+
+                  setContentView(webView);
+
+                  webView.loadUrl("file:///android_asset/catalog/index.html");
+              }
+
+              @Override
+              public void onBackPressed() {
+                  if (webView != null && webView.canGoBack()) {
+                      webView.goBack();
+                  } else {
+                      super.onBackPressed();
+                  }
+              }
+          }
+          EOF
+
+      - name: Rebuild clean catalog home
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          import os
+          FILE="$PROJECT_DIR/app/src/main/assets/catalog/index.html"
 
-          root = Path(os.environ["PROJECT_DIR"])
-          f = root / "app/src/main/java/com/habashy/catalog/MainActivity.java"
-          s = f.read_text(encoding="utf-8")
-          original = s
+          cat > "$FILE" <<'EOF'
+          <!DOCTYPE html>
+          <html lang="ar" dir="rtl">
+          <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-          lines = s.splitlines(True)
-          out = []
+          <title>الحبشي - فرع أبيس</title>
 
-          for line in lines:
-              if "مشاركة التطبيق" in line and ".setText(" in line:
-                  m = re.search(r'([A-Za-z_$][\w$]*)\.setText\(', line)
-                  out.append(line)
-                  if m:
-                      indent = re.match(r'\s*', line).group(0)
-                      out.append(
-                          indent + m.group(1) +
-                          ".setVisibility(android.view.View.GONE);\n"
-                      )
-              else:
-                  out.append(line)
+          <style>
 
-          s = "".join(out)
+          * {
+              box-sizing: border-box;
+          }
 
-          s = re.sub(
-              r'<(?:button|a|div)[^>]*>[^<]*مشاركة التطبيق[^<]*</(?:button|a|div)>',
-              '',
-              s,
-              flags=re.I | re.S
-          )
+          html, body {
+              margin: 0;
+              padding: 0;
+              width: 100%;
+              min-height: 100%;
+          }
 
-          if s != original:
-              f.write_text(s, encoding="utf-8")
-              print("Share-app section removed.")
-          else:
-              print("No share label found.")
-          PY
-      - name: Set up Java 21
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '21'
+          body {
+              font-family:
+                  Arial,
+                  Tahoma,
+                  sans-serif;
+              background: #f3f5f7;
+              color: #172033;
+          }
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.11.1'
+          .header {
+              background: linear-gradient(135deg, #111827, #26364d);
+              color: white;
+              padding: 28px 18px 24px;
+              text-align: center;
+              box-shadow: 0 3px 14px rgba(0,0,0,.16);
+          }
 
-      - name: Set up Android SDK
-        run: |
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -1)
-          if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager not found"
-            exit 1
-          fi
-          yes | "$SDKMANAGER" --licenses || true
-          "$SDKMANAGER" "platform-tools"
-          "$SDKMANAGER" "platforms;android-35"
-          "$SDKMANAGER" "build-tools;35.0.0"
+          .brand-ar {
+              font-size: 34px;
+              font-weight: 900;
+              letter-spacing: .5px;
+              margin-bottom: 3px;
+          }
 
-      - name: Build APK
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: gradle assembleDebug --no-daemon --stacktrace
+          .brand-en {
+              font-size: 22px;
+              font-weight: 800;
+              letter-spacing: 4px;
+              color: #e7c66b;
+          }
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: HABASHY-APK-V18
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+          .subtitle {
+              font-size: 17px;
+              font-weight: 700;
+              margin-top: 10px;
+          }
+
+          .branch {
+              display: inline-block;
+              margin-top: 12px;
+              padding: 8px 18px;
+              border: 1px solid rgba(231,198,107,.65);
+              border-radius: 30px;
+              color: #f4d783;
+              font-size: 15px;
+              font-weight: 800;
+          }
+
+          .container {
+              width: min(1100px, calc(100% - 28px));
+              margin: 0 auto;
+              padding: 20px 0 40px;
+          }
+
+          .intro {
+              background: white;
+              border-radius: 18px;
+              padding: 20px;
+              margin-bottom: 18px;
+              box-shadow: 0 3px 14px rgba(0,0,0,.07);
+              text-align: center;
+          }
+
+          .intro-title {
+              font-size: 22px;
+              font-weight: 900;
+              margin-bottom: 8px;
+          }
+
+          .intro-text {
+              font-size: 15px;
+              color: #596579;
+              line-height: 1.8;
+          }
+
+          .stats {
+              display: flex;
+              justify-content: center;
+              gap: 12px;
+              flex-wrap: wrap;
+              margin-top: 15px;
+          }
+
+          .stat {
+              min-width: 145px;
+              background: #f8f9fb;
+              border: 1px solid #e5e8ed;
+              border-radius: 12px;
+              padding: 12px 18px;
+          }
+
+          .stat strong {
+              display: block;
+              font-size: 21px;
+              color: #172033;
+          }
+
+          .stat span {
+              font-size: 13px;
+              color: #697386;
+          }
+
+          .section-title {
+              font-size: 24px;
+              font-weight: 900;
+              margin: 22px 2px 14px;
+          }
+
+          .sections {
+              display: grid;
+              grid-template-columns: 1fr;
+              gap: 12px;
+          }
+
+          .section-card {
+              background: white;
+              border: 1px solid #e3e7ec;
+              border-radius: 
