@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -18,7 +19,7 @@ jobs:
         run: |
           unzip -q HABASHY_Android_Project_V18.zip -d extracted
 
-            - name: Locate project
+      - name: Locate project
         run: |
           SETTINGS=$(find extracted -type f -name "settings.gradle" | head -1)
 
@@ -35,6 +36,8 @@ jobs:
           PROJECT_DIR=$(dirname "$SETTINGS")
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Project directory: $PROJECT_DIR"
+
+      - name: Rebuild MainActivity
         run: |
           FILE="$PROJECT_DIR/app/src/main/java/com/habashy/catalog/MainActivity.java"
 
@@ -97,11 +100,9 @@ jobs:
           <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
           <title>الحبشي - فرع أبيس</title>
 
           <style>
-
           * {
               box-sizing: border-box;
           }
@@ -114,10 +115,7 @@ jobs:
           }
 
           body {
-              font-family:
-                  Arial,
-                  Tahoma,
-                  sans-serif;
+              font-family: Arial, Tahoma, sans-serif;
               background: #f3f5f7;
               color: #172033;
           }
@@ -133,7 +131,6 @@ jobs:
           .brand-ar {
               font-size: 34px;
               font-weight: 900;
-              letter-spacing: .5px;
               margin-bottom: 3px;
           }
 
@@ -164,70 +161,4 @@ jobs:
           .container {
               width: min(1100px, calc(100% - 28px));
               margin: 0 auto;
-              padding: 20px 0 40px;
-          }
-
-          .intro {
-              background: white;
-              border-radius: 18px;
-              padding: 20px;
-              margin-bottom: 18px;
-              box-shadow: 0 3px 14px rgba(0,0,0,.07);
-              text-align: center;
-          }
-
-          .intro-title {
-              font-size: 22px;
-              font-weight: 900;
-              margin-bottom: 8px;
-          }
-
-          .intro-text {
-              font-size: 15px;
-              color: #596579;
-              line-height: 1.8;
-          }
-
-          .stats {
-              display: flex;
-              justify-content: center;
-              gap: 12px;
-              flex-wrap: wrap;
-              margin-top: 15px;
-          }
-
-          .stat {
-              min-width: 145px;
-              background: #f8f9fb;
-              border: 1px solid #e5e8ed;
-              border-radius: 12px;
-              padding: 12px 18px;
-          }
-
-          .stat strong {
-              display: block;
-              font-size: 21px;
-              color: #172033;
-          }
-
-          .stat span {
-              font-size: 13px;
-              color: #697386;
-          }
-
-          .section-title {
-              font-size: 24px;
-              font-weight: 900;
-              margin: 22px 2px 14px;
-          }
-
-          .sections {
-              display: grid;
-              grid-template-columns: 1fr;
-              gap: 12px;
-          }
-
-          .section-card {
-              background: white;
-              border: 1px solid #e3e7ec;
-              border-radius: 
+              padding: 20
