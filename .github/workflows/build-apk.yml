@@ -43,98 +43,36 @@ jobs:
             "sb_publishable_KTLWxGdoFz702QcSjPkUwQ_r5lLlxEj";
 
           function habashyInstallationId() {
+function habashyInstallationId() {
 
-              let id = localStorage.getItem(
-                  "habashy_installation_id"
-              );
+    let id = localStorage.getItem(
+        "habashy_installation_id"
+    );
 
-              if (!id) {
+    if (!id) {
 
-                  id =
-                      Date.now().toString(36) +
-                      "-" +
-                      Math.random().toString(36).substring(2) +
-                      "-" +
-                      Math.random().toString(36).substring(2);
+        id = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+            .replace(/[xy]/g, function(c) {
 
-                  localStorage.setItem(
-                      "habashy_installation_id",
-                      id
-                  );
-              }
+                const r =
+                    Math.random() * 16 | 0;
 
-              return id;
-          }
+                const v =
+                    c === "x"
+                        ? r
+                        : (r & 0x3 | 0x8);
 
-          async function habashyTrack(
-              eventType,
-              sectionId = null,
-              productName = null
-          ) {
+                return v.toString(16);
+            });
 
-              try {
+        localStorage.setItem(
+            "habashy_installation_id",
+            id
+        );
+    }
 
-                  const response = await fetch(
-                      HABASHY_SUPABASE_URL +
-                      "/rest/v1/analytics_events",
-                      {
-                          method: "POST",
-
-                          headers: {
-                              "apikey":
-                                  HABASHY_SUPABASE_KEY,
-
-                              "Content-Type":
-                                  "application/json",
-
-                              "Prefer":
-                                  "return=minimal"
-                          },
-
-                          body: JSON.stringify({
-                              installation_id:
-                                  habashyInstallationId(),
-
-                              event_type:
-                                  eventType,
-
-                              section_id:
-                                  sectionId,
-
-                              product_name:
-                                  productName,
-
-                              metadata: {
-                                  source:
-                                      "android_app"
-                              }
-                          })
-                      }
-                  );
-
-                  console.log(
-                      "HABASHY analytics status:",
-                      response.status
-                  );
-
-              } catch (error) {
-
-                  console.log(
-                      "HABASHY analytics error:",
-                      error
-                  );
-              }
-          }
-
-          habashyTrack("app_open");
-          EOF
-
-          if ! grep -q "online.js" "$PROJECT_DIR/app/src/main/assets/catalog/index.html"; then
-
-            sed -i 's#</body>#<script src="online.js"></script></body>#' \
-              "$PROJECT_DIR/app/src/main/assets/catalog/index.html"
-
-          fi
+    return id;
+}
 
       - name: Update MainActivity
         run: |
