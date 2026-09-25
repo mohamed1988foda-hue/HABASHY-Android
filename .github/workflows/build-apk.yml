@@ -152,3 +152,84 @@ jobs:
           document.addEventListener("DOMContentLoaded",async()=>{
            await loadSections();await checkAdmin();await track("app_open");home();
           });
+      - name: Update MainActivity
+        run: |
+          cat > "$PROJECT_DIR/app/src/main/java/com/habashy/catalog/MainActivity.java" <<'EOF'
+                    package com.habashy.catalog;
+          
+                    import android.app.Activity;
+                    import android.os.Bundle;
+                    import android.graphics.Color;
+                    import android.webkit.WebSettings;
+                    import android.webkit.WebView;
+                    import android.webkit.WebViewClient;
+          
+                    public class MainActivity extends Activity {
+                        private WebView webView;
+          
+                        @Override
+                        protected void onCreate(Bundle savedInstanceState) {
+                            super.onCreate(savedInstanceState);
+                            getWindow().setStatusBarColor(Color.rgb(16, 24, 39));
+          
+                            webView = new WebView(this);
+                            WebSettings settings = webView.getSettings();
+                            settings.setJavaScriptEnabled(true);
+                            settings.setDomStorageEnabled(true);
+                            settings.setBuiltInZoomControls(false);
+                            settings.setDisplayZoomControls(false);
+                            settings.setLoadWithOverviewMode(false);
+                            settings.setUseWideViewPort(true);
+          
+                            webView.setBackgroundColor(Color.rgb(245, 246, 248));
+                            webView.setWebViewClient(new WebViewClient());
+                            setContentView(webView);
+                            webView.loadUrl("file:///android_asset/catalog/index.html");
+                        }
+          
+                        @Override
+                        public void onBackPressed() {
+                            if (webView != null && webView.canGoBack()) {
+                                webView.goBack();
+                            } else {
+                                super.onBackPressed();
+                            }
+                        }
+                    }
+          EOF
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Set up Android SDK
+        run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -1)
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager not found"
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Build APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Verify APK
+        run: |
+          find "$PROJECT_DIR/app/build/outputs/apk" -type f -name "*.apk" -print
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HABASHY-APK-V23
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk if-no-files-found: error
