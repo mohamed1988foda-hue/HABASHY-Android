@@ -1,4 +1,4 @@
-name: Build HABASHY APK V21
+name: Build HABASHY APK V22
 
 on:
   push:
@@ -43,36 +43,110 @@ jobs:
             "sb_publishable_KTLWxGdoFz702QcSjPkUwQ_r5lLlxEj";
 
           function habashyInstallationId() {
-function habashyInstallationId() {
 
-    let id = localStorage.getItem(
-        "habashy_installation_id"
-    );
+              let id = localStorage.getItem(
+                  "habashy_installation_id"
+              );
 
-    if (!id) {
+              if (!id) {
 
-        id = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-            .replace(/[xy]/g, function(c) {
+                  id =
+                      "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+                      .replace(/[xy]/g, function(c) {
 
-                const r =
-                    Math.random() * 16 | 0;
+                          const r =
+                              Math.random() * 16 | 0;
 
-                const v =
-                    c === "x"
-                        ? r
-                        : (r & 0x3 | 0x8);
+                          const v =
+                              c === "x"
+                                  ? r
+                                  : (r & 0x3 | 0x8);
 
-                return v.toString(16);
-            });
+                          return v.toString(16);
+                      });
 
-        localStorage.setItem(
-            "habashy_installation_id",
-            id
-        );
-    }
+                  localStorage.setItem(
+                      "habashy_installation_id",
+                      id
+                  );
+              }
 
-    return id;
-}
+              return id;
+          }
+
+          async function habashyTrack(
+              eventType,
+              sectionId = null,
+              productName = null
+          ) {
+
+              try {
+
+                  const response = await fetch(
+                      HABASHY_SUPABASE_URL +
+                      "/rest/v1/analytics_events",
+                      {
+                          method: "POST",
+
+                          headers: {
+                              "apikey":
+                                  HABASHY_SUPABASE_KEY,
+
+                              "Authorization":
+                                  "Bearer " +
+                                  HABASHY_SUPABASE_KEY,
+
+                              "Content-Type":
+                                  "application/json",
+
+                              "Prefer":
+                                  "return=minimal"
+                          },
+
+                          body: JSON.stringify({
+                              installation_id:
+                                  habashyInstallationId(),
+
+                              event_type:
+                                  eventType,
+
+                              section_id:
+                                  sectionId,
+
+                              product_name:
+                                  productName,
+
+                              metadata: {
+                                  source:
+                                      "android_app"
+                              }
+                          })
+                      }
+                  );
+
+                  console.log(
+                      "HABASHY analytics status:",
+                      response.status
+                  );
+
+              } catch (error) {
+
+                  console.log(
+                      "HABASHY analytics error:",
+                      error
+                  );
+              }
+          }
+
+          habashyTrack("app_open");
+          EOF
+
+          if ! grep -q "online.js" "$PROJECT_DIR/app/src/main/assets/catalog/index.html"; then
+
+            sed -i 's#</body>#<script src="online.js"></script></body>#' \
+              "$PROJECT_DIR/app/src/main/assets/catalog/index.html"
+
+          fi
 
       - name: Update MainActivity
         run: |
@@ -166,11 +240,8 @@ function habashyInstallationId() {
             | head -1)
 
           if [ -z "$SDKMANAGER" ]; then
-
             echo "sdkmanager not found"
-
             exit 1
-
           fi
 
           yes | "$SDKMANAGER" --licenses || true
@@ -201,7 +272,7 @@ function habashyInstallationId() {
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: HABASHY-APK-V21
+          name: HABASHY-APK-V22
 
           path: |
             ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
