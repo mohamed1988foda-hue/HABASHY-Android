@@ -1,91 +1,85 @@
-      - name: Fix V23 account buttons
+name: Build HABASHY APK V23
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract project
+        run: |
+          unzip -q HABASHY_Android_Project_V18.zip -d extracted
+          PROJECT_DIR=$(dirname "$(find extracted -type f -name settings.gradle | head -1)")
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+      - name: Enable Internet
+        run: |
+          MANIFEST="$PROJECT_DIR/app/src/main/AndroidManifest.xml"
+          if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
+            sed -i '/<manifest/a\ <uses-permission android:name="android.permission.INTERNET"/>' "$MANIFEST"
+          fi
+
+      - name: Install V23 web app
+        run: |
+          mkdir -p "$PROJECT_DIR/app/src/main/assets/catalog"
+          python3 -c "from pathlib import Path; p=Path(r'$PROJECT_DIR/app/src/main/assets/catalog/index.html'); s=p.read_text(encoding='utf-8'); s=s if 'src=\"online.js\"' in s else s.replace('</body>','<script src=\"online.js\"></script></body>'); p.write_text(s,encoding='utf-8')"
+          echo ICAgICAgICAgIGNvbnN0IFNCX1VSTD0iaHR0cHM6Ly90Z2lzeXdybG1td2xjZ3FtdmpwZi5zdXBhYmFzZS5jbyI7CiAgICAgICAgICBjb25zdCBTQl9LRVk9InNiX3B1Ymxpc2hhYmxlX0tUTFd4R2RvRno3MDJRY1NqUGtVd1FfcjVsTGx4RWoiOwogICAgICAgICAgCiAgICAgICAgICBsZXQgdG9rZW49bG9jYWxTdG9yYWdlLmdldEl0ZW0oImhhYmFzaHlfdG9rZW4iKXx8IiI7CiAgICAgICAgICBsZXQgdXNlcj1KU09OLnBhcnNlKGxvY2FsU3RvcmFnZS5nZXRJdGVtKCJoYWJhc2h5X3VzZXIiKXx8Im51bGwiKTsKICAgICAgICAgIGxldCBhZG1pbj1mYWxzZSwgc2VjdGlvbnM9W10sIHByb2R1Y3RzPVtdOwogICAgICAgICAgCiAgICAgICAgICBjb25zdCBmYWxsYmFjaz1bCiAgICAgICAgICBbMSwi2YLZgdmEINio2KPZhtmI2KfYudmHIl0sWzIsItiu2LHYt9mI2YUiXSxbMywi2LXZhtmB2LHYqSDZiNmE2YjYp9iy2YXZh9inIl0sWzQsItij2LPZhNin2YMg2KjYo9mG2YjYp9i52YfYpyJdLAogICAgICAgICAgWzUsItit2K/Yp9mK2K8g2KjZhNiv2YoiXSxbNiwi2YXYs9in2YXZitixINio2KPZhtmI2KfYudmHIl0sWzcsIti52K/YryDYr9mK2YPZiNix2YrYqSDZiNmF2YbYqtis2KfYqiDYr9mK2YPZiNixIl0sCiAgICAgICAgICBbOCwi2KPZg9ixINmI2KXZg9iz2LPZiNin2LHYp9iqIl0sWzksItmD2YjYp9mE2YrZhiDYqNij2YbZiNin2LnZh9inINmI2LPZitmE2YbYr9ix2KfYqiJdLFsxMCwi2K7YtNioINmI2LPZhNin2YTZhSJdLAogICAgICAgICAgWzExLCLYudiv2K8g2KjYo9mG2YjYp9i52YfYpyDZiNij2K/ZiNin2Kog2YjZhdiz2KrZhNiy2YXYp9iqIl0sWzEyLCLZhdmI2KfYs9mK2LEg2LPYqtin2KbYsSDZiNmE2YjYp9iy2YXZh9inIl0sCiAgICAgICAgICBbMTMsItmF2YHYtdmE2KfYqiDZiNmE2YjYp9iy2YUg2YbYrNin2LHYqSDYtdmK2YbZiiJdXTsKICAgICAgICAgIAogICAgICAgICAgZnVuY3Rpb24gZXNjKHgpe3JldHVybiBTdHJpbmcoeD8/IiIpLnJlcGxhY2UoL1smPD4iJ10vZyxjPT4oeyImIjoiJmFtcDsiLCI8IjoiJmx0OyIsIj4iOiImZ3Q7IiwnIic6IiZxdW90OyIsIiciOiImIzM5OyJ9W2NdKSl9CiAgICAgICAgICBhc3luYyBmdW5jdGlvbiBhcGkocGF0aCxvcHQ9e30pewogICAgICAgICAgICBjb25zdCBoPXsiYXBpa2V5IjpTQl9LRVksIkNvbnRlbnQtVHlwZSI6ImFwcGxpY2F0aW9uL2pzb24iLC4uLihvcHQuaGVhZGVyc3x8e30pfTsKICAgICAgICAgICAgaWYodG9rZW4paC5BdXRob3JpemF0aW9uPSJCZWFyZXIgIit0b2tlbjsKICAgICAgICAgICAgY29uc3Qgcj1hd2FpdCBmZXRjaChTQl9VUkwrcGF0aCx7Li4ub3B0LGhlYWRlcnM6aH0pOwogICAgICAgICAgICBjb25zdCB0PWF3YWl0IHIudGV4dCgpOyBsZXQgZD1udWxsOyB0cnl7ZD10P0pTT04ucGFyc2UodCk6bnVsbH1jYXRjaChlKXt9CiAgICAgICAgICAgIGlmKCFyLm9rKXRocm93IEVycm9yKGQ/Lm1lc3NhZ2V8fGQ/LmVycm9yX2Rlc2NyaXB0aW9ufHx0fHwoIkhUVFAgIityLnN0YXR1cykpOwogICAgICAgICAgICByZXR1cm4gZDsKICAgICAgICAgIH0KICAgICAgICAgIGZ1bmN0aW9uIGlpZCgpewogICAgICAgICAgICBsZXQgeD1sb2NhbFN0b3JhZ2UuZ2V0SXRlbSgiaGFiYXNoeV9pbnN0YWxsYXRpb25faWQiKTsKICAgICAgICAgICAgaWYoIXgpe3g9Y3J5cHRvLnJhbmRvbVVVSUQoKTtsb2NhbFN0b3JhZ2Uuc2V0SXRlbSgiaGFiYXNoeV9pbnN0YWxsYXRpb25faWQiLHgpfQogICAgICAgICAgICByZXR1cm4geDsKICAgICAgICAgIH0KICAgICAgICAgIGFzeW5jIGZ1bmN0aW9uIHRyYWNrKHR5cGUsc2VjdGlvbl9pZD1udWxsLHByb2R1Y3RfbmFtZT1udWxsKXsKICAgICAgICAgICAgdHJ5e2F3YWl0IGFwaSgiL3Jlc3QvdjEvYW5hbHl0aWNzX2V2ZW50cyIse21ldGhvZDoiUE9TVCIsaGVhZGVyczp7IlByZWZlciI6InJldHVybj1taW5pbWFsIn0sCiAgICAgICAgICAgICAgYm9keTpKU09OLnN0cmluZ2lmeSh7aW5zdGFsbGF0aW9uX2lkOmlpZCgpLHVzZXJfaWQ6dXNlcj8uaWR8fG51bGwsZXZlbnRfdHlwZTp0eXBlLHNlY3Rpb25faWQscHJvZHVjdF9uYW1lLG1ldGFkYXRhOnt2ZXJzaW9uOiJWMjMiLHNvdXJjZToiYW5kcm9pZF9hcHAifX0pfSl9Y2F0Y2goZSl7fQogICAgICAgICAgfQogICAgICAgICAgYXN5bmMgZnVuY3Rpb24gbG9hZFNlY3Rpb25zKCl7CiAgICAgICAgICAgIHRyeXtzZWN0aW9ucz1hd2FpdCBhcGkoIi9yZXN0L3YxL2NhdGFsb2dfc2VjdGlvbnM/c2VsZWN0PWlkLHNlY3Rpb25fbnVtYmVyLG5hbWUscGFnZV9zdGFydCxwYWdlX2VuZCZpc19hY3RpdmU9ZXEudHJ1ZSZvcmRlcj1zZWN0aW9uX251bWJlciIpfQogICAgICAgICAgICBjYXRjaChlKXtzZWN0aW9ucz1bXX0KICAgICAgICAgICAgaWYoIXNlY3Rpb25zLmxlbmd0aClzZWN0aW9ucz1mYWxsYmFjay5tYXAoeD0+KHtpZDpudWxsLHNlY3Rpb25fbnVtYmVyOnhbMF0sbmFtZTp4WzFdfSkpOwogICAgICAgICAgfQogICAgICAgICAgYXN5bmMgZnVuY3Rpb24gbG9hZFByb2R1Y3RzKGlkKXsKICAgICAgICAgICAgcHJvZHVjdHM9aWQ/YXdhaXQgYXBpKCIvcmVzdC92MS9wcm9kdWN0cz9zZWxlY3Q9aWQsc2VjdGlvbl9pZCxuYW1lLGRlc2NyaXB0aW9uLGltYWdlX3VybCxzb3J0X29yZGVyLGlzX2FjdGl2ZSZzZWN0aW9uX2lkPWVxLiIraWQrIiZvcmRlcj1zb3J0X29yZGVyLG5hbWUiKTpbXX0KICAgICAgICAgIGFzeW5jIGZ1bmN0aW9uIGNoZWNrQWRtaW4oKXsKICAgICAgICAgICAgYWRtaW49ZmFsc2U7CiAgICAgICAgICAgIGlmKCF0b2tlbnx8IXVzZXIpcmV0dXJuOwogICAgICAgICAgICB0cnl7Y29uc3QgeD1hd2FpdCBhcGkoIi9yZXN0L3YxL2FwcF9hZG1pbnM/c2VsZWN0PXVzZXJfaWQmdXNlcl9pZD1lcS4iK3VzZXIuaWQrIiZpc19hY3RpdmU9ZXEudHJ1ZSIpO2FkbWluPXgubGVuZ3RoPjB9Y2F0Y2goZSl7fQogICAgICAgICAgfQogICAgICAgICAgZnVuY3Rpb24gY3NzKCl7cmV0dXJuIGA8c3R5bGU+CiAgICAgICAgICAqe2JveC1zaXppbmc6Ym9yZGVyLWJveH1ib2R5e21hcmdpbjowO2JhY2tncm91bmQ6I2YzZjVmODtmb250LWZhbWlseTpBcmlhbCxUYWhvbWE7Y29sb3I6IzE3MjAzM30KICAgICAgICAgICNoYnttaW4taGVpZ2h0OjEwMHZofS5iYXJ7YmFja2dyb3VuZDojMTAxODI3O2NvbG9yOndoaXRlO3BhZGRpbmc6MThweH0ud3JhcHttYXgtd2lkdGg6OTAwcHg7bWFyZ2luOmF1dG87cGFkZGluZzoxNnB4fQogICAgICAgICAgLmJyYW5ke2ZvbnQtc2l6ZToyNHB4O2ZvbnQtd2VpZ2h0OjgwMH0uc3Vie29wYWNpdHk6Ljg7bWFyZ2luLXRvcDo1cHg7Zm9udC1zaXplOjEzcHh9CiAgICAgICAgICAuaGVybywuY2FyZCwucHJvZHtiYWNrZ3JvdW5kOndoaXRlO2JvcmRlci1yYWRpdXM6MTZweDtib3gtc2hhZG93OjAgMnB4IDEwcHggIzAwMDF9CiAgICAgICAgICAuaGVyb3twYWRkaW5nOjE4cHg7bWFyZ2luLWJvdHRvbToxNHB4fS50aXRsZXtmb250LXNpemU6MjJweDtmb250LXdlaWdodDo4MDA7bWFyZ2luLWJvdHRvbTo3cHh9CiAgICAgICAgICAuZ3JpZHtkaXNwbGF5OmdyaWQ7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCgyLDFmcik7Z2FwOjExcHh9LmNhcmR7cGFkZGluZzoxNnB4O3RleHQtYWxpZ246cmlnaHQ7Ym9yZGVyOjA7bWluLWhlaWdodDo4OHB4fQogICAgICAgICAgLmNhcmQgYntkaXNwbGF5OmJsb2NrO2ZvbnQtc2l6ZToxNnB4O21hcmdpbi1ib3R0b206NnB4fS5tdXRlZHtjb2xvcjojNjY3MDg1O2ZvbnQtc2l6ZToxM3B4fQogICAgICAgICAgYnV0dG9ue2JvcmRlcjowO2JvcmRlci1yYWRpdXM6MTFweDtwYWRkaW5nOjExcHggMTRweDtmb250LXdlaWdodDo3MDA7bWFyZ2luOjNweDtjdXJzb3I6cG9pbnRlcn0KICAgICAgICAgIC5wcmltYXJ5e2JhY2tncm91bmQ6IzEwMTgyNztjb2xvcjojZmZmfS5nb2xke2JhY2tncm91bmQ6I2M5YTIyNztjb2xvcjojZmZmfS5saWdodHtiYWNrZ3JvdW5kOiNlZWYxZjU7Y29sb3I6IzE3MjAzM30uZGFuZ2Vye2JhY2tncm91bmQ6I2I0MjMxODtjb2xvcjp3aGl0ZX0KICAgICAgICAgIGlucHV0LHRleHRhcmVhLHNlbGVjdHt3aWR0aDoxMDAlO3BhZGRpbmc6MTJweDtib3JkZXI6MXB4IHNvbGlkICNkOGRkZTY7Ym9yZGVyLXJhZGl1czoxMHB4O21hcmdpbjo1cHggMCAxMHB4O2JhY2tncm91bmQ6d2hpdGV9CiAgICAgICAgICBsYWJlbHtmb250LXNpemU6MTNweDtmb250LXdlaWdodDpib2xkfS5wcm9ke2Rpc3BsYXk6ZmxleDtnYXA6MTFweDtwYWRkaW5nOjEwcHg7bWFyZ2luOjlweCAwO2FsaWduLWl0ZW1zOmNlbnRlcn0KICAgICAgICAgIC5wcm9kIGltZ3t3aWR0aDo3NXB4O2hlaWdodDo3NXB4O29iamVjdC1maXQ6Y29udGFpbjtib3JkZXItcmFkaXVzOjlweH0ucGJvZHl7ZmxleDoxfQogICAgICAgICAgQG1lZGlhKG1pbi13aWR0aDo2NTBweCl7LmdyaWR7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCgzLDFmcil9fQogICAgICAgICAgPC9zdHlsZT5gfQogICAgICAgICAgCiAgICAgICAgICBsZXQgbGVnYWN5Tm9kZXM9W107CiAgICAgICAgICBmdW5jdGlvbiBtb3VudChib2R5KXsKICAgICAgICAgICAgbGVnYWN5Tm9kZXMuZm9yRWFjaChuPT5uLnN0eWxlLmRpc3BsYXk9Im5vbmUiKTsKICAgICAgICAgICAgbGV0IHI9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoImhiIik7CiAgICAgICAgICAgIGlmKCFyKXsKICAgICAgICAgICAgICByPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoImRpdiIpOyByLmlkPSJoYiI7IGRvY3VtZW50LmJvZHkuYXBwZW5kQ2hpbGQocik7CiAgICAgICAgICAgIH0KICAgICAgICAgICAgci5pbm5lckhUTUw9Y3NzKCkrYDxkaXYgY2xhc3M9ImJhciI+PGRpdiBjbGFzcz0id3JhcCIgc3R5bGU9InBhZGRpbmc6MCI+PGRpdiBjbGFzcz0iYnJhbmQiPtin2YTYrdio2LTZiiDZhNmE2KjZiNmK2KfYqiDZiNin2YTYrdiv2KfZitivPC9kaXY+PGRpdiBjbGFzcz0ic3ViIj5IQUJBU0hZIOKAlCDZgdix2Lkg2KPYqNmK2LM8L2Rpdj48L2Rpdj48L2Rpdj4ke2JvZHl9YDsKICAgICAgICAgICAgci5zdHlsZS5kaXNwbGF5PSJibG9jayI7CiAgICAgICAgICB9CiAgICAgICAgICBmdW5jdGlvbiBzaGVsbChib2R5KXttb3VudChib2R5KX0KICAgICAgICAgIAogICAgICAgICAgZnVuY3Rpb24gaG9tZSgpewogICAgICAgICAgIHNoZWxsKGA8ZGl2IGNsYXNzPSJ3cmFwIj48ZGl2IGNsYXNzPSJoZXJvIj48ZGl2IGNsYXNzPSJ0aXRsZSI+2YHZh9ix2LMg2KfZhNmD2KrYp9mE2YjYrDwvZGl2PjxkaXYgY2xhc3M9Im11dGVkIj7Yp9iu2KrYsSDYp9mE2YLYs9mFINmE2LnYsdi2INmF2K3YqtmI2YrYp9iq2YcuPC9kaXY+PC9kaXY+CiAgICAgICAgICAgPGRpdiBjbGFzcz0iZ3JpZCI+JHtzZWN0aW9ucy5tYXAocz0+YDxidXR0b24gY2xhc3M9ImNhcmQiIG9uY2xpY2s9Im9wZW5TZWMoJHtzLmlkfHwwfSwke3Muc2VjdGlvbl9udW1iZXJ9KSI+PGI+JHtlc2Mocy5uYW1lKX08L2I+PHNwYW4gY2xhc3M9Im11dGVkIj7Yp9mE2YLYs9mFICR7cy5zZWN0aW9uX251bWJlcn0ke3MucGFnZV9zdGFydD9gIOKAoiAke3MucGFnZV9zdGFydH3igJMke3MucGFnZV9lbmR9YDoiIn08L3NwYW4+PC9idXR0b24+YCkuam9pbigiIil9PC9kaXY+CiAgICAgICAgICAgPGRpdiBjbGFzcz0iaGVybyI+PGI+2KfZhNit2LPYp9ioINmI2KfZhNmD2KrYp9mE2YjYrDwvYj48YnI+CiAgICAgICAgICAgPGJ1dHRvbiBjbGFzcz0icHJpbWFyeSIgb25jbGljaz0iYWNjb3VudCgpIj7wn5GkINit2LPYp9ioINin2YTYudmF2YrZhDwvYnV0dG9uPgogICAgICAgICAgICR7YWRtaW4/YDxidXR0b24gY2xhc3M9ImdvbGQiIG9uY2xpY2s9ImFkbWluUGFuZWwoKSI+4pqZ77iPINmE2YjYrdipINin2YTYpdiv2KfYsdipPC9idXR0b24+YDoiIn0KICAgICAgICAgICA8YnV0dG9uIGNsYXNzPSJsaWdodCIgb25jbGljaz0ibGVnYWN5KCkiPvCfk5Yg2KfZhNmD2KrYp9mE2YjYrCDYp9mE2YPYp9mF2YQgNDc1INi12YHYrdipPC9idXR0b24+PC9kaXY+PC9kaXY+YCk7CiAgICAgICAgICB9CiAgICAgICAgICBhc3luYyBmdW5jdGlvbiBvcGVuU2VjKGlkLG51bSl7CiAgICAgICAgICAgaWYoaWQpYXdhaXQgbG9hZFByb2R1Y3RzKGlkKTtlbHNlIHByb2R1Y3RzPVtdOwogICAgICAgICAgIGF3YWl0IHRyYWNrKCJzZWN0aW9uX29wZW4iLGlkfHxudWxsLG51bGwpOwogICAgICAgICAgIGNvbnN0IHM9c2VjdGlvbnMuZmluZCh4PT54LmlkPT09aWQpfHxzZWN0aW9ucy5maW5kKHg9Pnguc2VjdGlvbl9udW1iZXI9PT1udW0pOwogICAgICAgICAgIHNoZWxsKGA8ZGl2IGNsYXNzPSJ3cmFwIj48YnV0dG9uIGNsYXNzPSJsaWdodCIgb25jbGljaz0iaG9tZSgpIj7ihpAg2KfZhNmB2YfYsdizPC9idXR0b24+CiAgICAgICAgICAgPGRpdiBjbGFzcz0iaGVybyI+PGRpdiBjbGFzcz0idGl0bGUiPiR7ZXNjKHM/Lm5hbWV8fCLYp9mE2YLYs9mFIil9PC9kaXY+PGRpdiBjbGFzcz0ibXV0ZWQiPtin2YTZgtiz2YUgJHtudW19PC9kaXY+PC9kaXY+CiAgICAgICAgICAgJHtwcm9kdWN0cy5sZW5ndGg/cHJvZHVjdHMubWFwKHA9PmA8ZGl2IGNsYXNzPSJwcm9kIiBvbmNsaWNrPSJ0cmFjaygncHJvZHVjdF9vcGVuJywke3Auc2VjdGlvbl9pZH0sJyR7ZXNjKHAubmFtZSl9JykiPgogICAgICAgICAgICR7cC5pbWFnZV91cmw/YDxpbWcgc3JjPSIke2VzYyhwLmltYWdlX3VybCl9Ij5gOiIifTxkaXYgY2xhc3M9InBib2R5Ij48Yj4ke2VzYyhwLm5hbWUpfTwvYj48ZGl2IGNsYXNzPSJtdXRlZCI+JHtlc2MocC5kZXNjcmlwdGlvbnx8IiIpfTwvZGl2PjwvZGl2PjwvZGl2PmApLmpvaW4oIiIpOmA8ZGl2IGNsYXNzPSJoZXJvIj7ZhNinINiq2YjYrNivINmF2YbYqtis2KfYqiDZhdi22KfZgdipINmE2YfYsNinINin2YTZgtiz2YUg2K3Yp9mE2YrZi9inLjwvZGl2PmB9PC9kaXY+YCk7CiAgICAgICAgICB9CiAgICAgICAgICBmdW5jdGlvbiBhY2NvdW50KCl7CiAgICAgICAgICAgc2hlbGwoYDxkaXYgY2xhc3M9IndyYXAiPjxidXR0b24gY2xhc3M9ImxpZ2h0IiBvbmNsaWNrPSJob21lKCkiPuKGkCDYp9mE2YHZh9ix2LM8L2J1dHRvbj4KICAgICAgICAgICAke3VzZXI/YDxkaXYgY2xhc3M9Imhlcm8iPjxkaXYgY2xhc3M9InRpdGxlIj7Yrdiz2KfYqNmKPC9kaXY+PGI+JHtlc2ModXNlci5lbWFpbCl9PC9iPjxicj4KICAgICAgICAgICA8YnV0dG9uIGNsYXNzPSJkYW5nZXIiIG9uY2xpY2s9ImxvZ291dCgpIj7Yqtiz2KzZitmEINin2YTYrtix2YjYrDwvYnV0dG9uPiR7YWRtaW4/YDxidXR0b24gY2xhc3M9ImdvbGQiIG9uY2xpY2s9ImFkbWluUGFuZWwoKSI+4pqZ77iPINmE2YjYrdipINin2YTYpdiv2KfYsdipPC9idXR0b24+YDoiIn08L2Rpdj5gOgogICAgICAgICAgIGA8ZGl2IGNsYXNzPSJoZXJvIj48ZGl2IGNsYXNzPSJ0aXRsZSI+2KXZhti02KfYoSDYrdiz2KfYqDwvZGl2PgogICAgICAgICAgIDxsYWJlbD7Yp9mE2KfYs9mFINin2YTZg9in2YXZhDwvbGFiZWw+PGlucHV0IGlkPSJzbiI+PGxhYmVsPtin2YTZh9in2KrZgTwvbGFiZWw+PGlucHV0IGlkPSJzcCI+PGxhYmVsPtin2YTZhdit2YQgLyDYp9mE2LTYsdmD2Kk8L2xhYmVsPjxpbnB1dCBpZD0ic3MiPjxsYWJlbD7Yp9mE2YXYr9mK2YbYqTwvbGFiZWw+PGlucHV0IGlkPSJzYyIgdmFsdWU9Itin2YTYpdiz2YPZhtiv2LHZitipIj48bGFiZWw+2KfZhNio2LHZitivINin2YTYpdmE2YPYqtix2YjZhtmKPC9sYWJlbD48aW5wdXQgaWQ9InNlIiB0eXBlPSJlbWFpbCI+PGxhYmVsPtmD2YTZhdipINin2YTZhdix2YjYsTwvbGFiZWw+PGlucHV0IGlkPSJzdyIgdHlwZT0icGFzc3dvcmQiPjxidXR0b24gY2xhc3M9InByaW1hcnkiIG9uY2xpY2s9InNpZ251cCgpIj7YpdmG2LTYp9ihINin2YTYrdiz2KfYqDwvYnV0dG9uPjwvZGl2PgogICAgICAgICAgIDxkaXYgY2xhc3M9Imhlcm8iPjxkaXYgY2xhc3M9InRpdGxlIj7Yqtiz2KzZitmEINin2YTYr9iu2YjZhDwvZGl2PjxpbnB1dCBpZD0ibGUiIHR5cGU9ImVtYWlsIiBwbGFjZWhvbGRlcj0i2KfZhNio2LHZitivINin2YTYpdmE2YPYqtix2YjZhtmKIj48aW5wdXQgaWQ9Imx3IiB0eXBlPSJwYXNzd29yZCIgcGxhY2Vob2xkZXI9ItmD2YTZhdipINin2YTZhdix2YjYsSI+PGJ1dHRvbiBjbGFzcz0iZ29sZCIgb25jbGljaz0ibG9naW4oKSI+2KrYs9is2YrZhCDYp9mE2K/YrtmI2YQ8L2J1dHRvbj48L2Rpdj5gfTwvZGl2PmApOwogICAgICAgICAgfQogICAgICAgICAgYXN5bmMgZnVuY3Rpb24gc2lnbnVwKCl7CiAgICAgICAgICAgdHJ5ewogICAgICAgICAgICBjb25zdCBmPXtmdWxsX25hbWU6c24udmFsdWUudHJpbSgpLHBob25lOnNwLnZhbHVlLnRyaW0oKSxzaG9wX25hbWU6c3MudmFsdWUudHJpbSgpLGNpdHk6c2MudmFsdWUudHJpbSgpLGVtYWlsOnNlLnZhbHVlLnRyaW0oKSxwYXNzd29yZDpzdy52YWx1ZX07CiAgICAgICAgICAgIGlmKCFmLmZ1bGxfbmFtZXx8IWYuZW1haWx8fGYucGFzc3dvcmQubGVuZ3RoPDYpcmV0dXJuIGFsZXJ0KCLYo9mD2YXZhCDYp9mE2KjZitin2YbYp9iqINmI2YPZhNmF2Kkg2KfZhNmF2LHZiNixIDYg2KPYrdix2YEg2LnZhNmJINin2YTYo9mC2YQuIik7CiAgICAgICAgICAgIGNvbnN0IGQ9YXdhaXQgYXBpKCIvYXV0aC92MS9zaWdudXAiLHttZXRob2Q6IlBPU1QiLGJvZHk6SlNPTi5zdHJpbmdpZnkoe2VtYWlsOmYuZW1haWwscGFzc3dvcmQ6Zi5wYXNzd29yZH0pfSk7CiAgICAgICAgICAgIGlmKCFkLmFjY2Vzc190b2tlbilyZXR1cm4gYWxlcnQoItiq2YUg2KXZhti02KfYoSDYp9mE2K3Ys9in2KguINil2LDYpyDYt9mP2YTYqCDYqtij2YPZitivINin2YTYqNix2YrYr9iMINij2YPYryDYp9mE2KjYsdmK2K8g2KvZhSDYs9is2YQg2KfZhNiv2K7ZiNmELiIpOwogICAgICAgICAgICB0b2tlbj1kLmFjY2Vzc190b2tlbjt1c2VyPWQudXNlcjtsb2NhbFN0b3JhZ2Uuc2V0SXRlbSgiaGFiYXNoeV90b2tlbiIsdG9rZW4pO2xvY2FsU3RvcmFnZS5zZXRJdGVtKCJoYWJhc2h5X3VzZXIiLEpTT04uc3RyaW5naWZ5KHVzZXIpKTsKICAgICAgICAgICAgYXdhaXQgYXBpKCIvcmVzdC92MS9jdXN0b21lcl9wcm9maWxlcyIse21ldGhvZDoiUE9TVCIsaGVhZGVyczp7IlByZWZlciI6InJlc29sdXRpb249bWVyZ2UtZHVwbGljYXRlcyJ9LGJvZHk6SlNPTi5zdHJpbmdpZnkoe2lkOnVzZXIuaWQsZnVsbF9uYW1lOmYuZnVsbF9uYW1lLHBob25lOmYucGhvbmV8fG51bGwsc2hvcF9uYW1lOmYuc2hvcF9uYW1lfHxudWxsLGNpdHk6Zi5jaXR5fHxudWxsLGxhc3Rfc2Vlbl9hdDpuZXcgRGF0ZSgpLnRvSVNPU3RyaW5nKCl9KX0pOwogICAgICAgICAgICBhd2FpdCB0cmFjaygic2lnbnVwIik7YXdhaXQgY2hlY2tBZG1pbigpO2hvbWUoKTsKICAgICAgICAgICB9Y2F0Y2goZSl7YWxlcnQoItiq2LnYsNixINil2YbYtNin2KEg2KfZhNit2LPYp9ioOiAiK2UubWVzc2FnZSl9CiAgICAgICAgICB9CiAgICAgICAgICBhc3luYyBmdW5jdGlvbiBsb2dpbigpewogICAgICAgICAgIHRyeXtjb25zdCBkPWF3YWl0IGFwaSgiL2F1dGgvdjEvdG9rZW4/Z3JhbnRfdHlwZT1wYXNzd29yZCIse21ldGhvZDoiUE9TVCIsYm9keTpKU09OLnN0cmluZ2lmeSh7ZW1haWw6bGUudmFsdWUudHJpbSgpLHBhc3N3b3JkOmx3LnZhbHVlfSl9KTsKICAgICAgICAgICB0b2tlbj1kLmFjY2Vzc190b2tlbjt1c2VyPWQudXNlcjtsb2NhbFN0b3JhZ2Uuc2V0SXRlbSgiaGFiYXNoeV90b2tlbiIsdG9rZW4pO2xvY2FsU3RvcmFnZS5zZXRJdGVtKCJoYWJhc2h5X3VzZXIiLEpTT04uc3RyaW5naWZ5KHVzZXIpKTsKICAgICAgICAgICBhd2FpdCBjaGVja0FkbWluKCk7YXdhaXQgdHJhY2soImxvZ2luIik7aG9tZSgpCiAgICAgICAgICAgfWNhdGNoKGUpe2FsZXJ0KCLYqti52LDYsSDYqtiz2KzZitmEINin2YTYr9iu2YjZhDogIitlLm1lc3NhZ2UpfQogICAgICAgICAgfQogICAgICAgICAgZnVuY3Rpb24gbG9nb3V0KCl7dG9rZW49IiI7dXNlcj1udWxsO2FkbWluPWZhbHNlO2xvY2FsU3RvcmFnZS5yZW1vdmVJdGVtKCJoYWJhc2h5X3Rva2VuIik7bG9jYWxTdG9yYWdlLnJlbW92ZUl0ZW0oImhhYmFzaHlfdXNlciIpO2hvbWUoKX0KICAgICAgICAgIGFzeW5jIGZ1bmN0aW9uIGFkbWluUGFuZWwoKXsKICAgICAgICAgICBpZighYWRtaW4pcmV0dXJuIGFsZXJ0KCLYutmK2LEg2YXYtdix2K0uIik7CiAgICAgICAgICAgc2hlbGwoYDxkaXYgY2xhc3M9IndyYXAiPjxidXR0b24gY2xhc3M9ImxpZ2h0IiBvbmNsaWNrPSJob21lKCkiPuKGkCDYp9mE2LHYptmK2LPZitipPC9idXR0b24+PGRpdiBjbGFzcz0iaGVybyI+PGRpdiBjbGFzcz0idGl0bGUiPuKame+4jyDZhNmI2K3YqSDYp9mE2KXYr9in2LHYqTwvZGl2PjxkaXYgY2xhc3M9Im11dGVkIj7Ypdi22KfZgdipINmI2K3YsNmBINmF2YbYqtis2KfYqiDYp9mE2YPYqtin2YTZiNisPC9kaXY+PC9kaXY+CiAgICAgICAgICAgPGRpdiBjbGFzcz0iaGVybyI+PGI+2KXYttin2YHYqSDZhdmG2KrYrDwvYj48bGFiZWw+2KfZhNmC2LPZhTwvbGFiZWw+PHNlbGVjdCBpZD0iYXMiPiR7c2VjdGlvbnMubWFwKHM9PmA8b3B0aW9uIHZhbHVlPSIke3MuaWR9Ij4ke3Muc2VjdGlvbl9udW1iZXJ9IOKAlCAke2VzYyhzLm5hbWUpfTwvb3B0aW9uPmApLmpvaW4oIiIpfTwvc2VsZWN0PgogICAgICAgICAgIDxsYWJlbD7Yp9iz2YUg2KfZhNmF2YbYqtisPC9sYWJlbD48aW5wdXQgaWQ9ImFuIj48bGFiZWw+2KfZhNmI2LXZgTwvbGFiZWw+PHRleHRhcmVhIGlkPSJhZCI+PC90ZXh0YXJlYT48bGFiZWw+2LHYp9io2Lcg2KfZhNi12YjYsdipPC9sYWJlbD48aW5wdXQgaWQ9ImFpIiBwbGFjZWhvbGRlcj0iaHR0cHM6Ly8uLi4iPjxsYWJlbD7Yp9mE2KrYsdiq2YrYqDwvbGFiZWw+PGlucHV0IGlkPSJhbyIgdHlwZT0ibnVtYmVyIiB2YWx1ZT0iMCI+PGJ1dHRvbiBjbGFzcz0iZ29sZCIgb25jbGljaz0iYWRkUHJvZHVjdCgpIj7inpUg2KXYttin2YHYqTwvYnV0dG9uPjwvZGl2PgogICAgICAgICAgIDxkaXYgY2xhc3M9Imhlcm8iPjxiPtmF2YbYqtis2KfYqiDYp9mE2YLYs9mFPC9iPjxzZWxlY3QgaWQ9Im1zIiBvbmNoYW5nZT0ibWFuYWdlUHJvZHVjdHMoKSI+JHtzZWN0aW9ucy5tYXAocz0+YDxvcHRpb24gdmFsdWU9IiR7cy5pZH0iPiR7cy5zZWN0aW9uX251bWJlcn0g4oCUICR7ZXNjKHMubmFtZSl9PC9vcHRpb24+YCkuam9pbigiIil9PC9zZWxlY3Q+PGRpdiBpZD0ibWwiPjwvZGl2PjwvZGl2PjwvZGl2PmApOwogICAgICAgICAgIG1hbmFnZVByb2R1Y3RzKCk7CiAgICAgICAgICB9CiAgICAgICAgICBhc3luYyBmdW5jdGlvbiBtYW5hZ2VQcm9kdWN0cygpewogICAgICAgICAgIHRyeXtjb25zdCB4PWF3YWl0IGFwaSgiL3Jlc3QvdjEvcHJvZHVjdHM/c2VsZWN0PWlkLG5hbWUsZGVzY3JpcHRpb24saW1hZ2VfdXJsLHNvcnRfb3JkZXIsaXNfYWN0aXZlJnNlY3Rpb25faWQ9ZXEuIittcy52YWx1ZSsiJm9yZGVyPXNvcnRfb3JkZXIsbmFtZSIpOwogICAgICAgICAgIG1sLmlubmVySFRNTD14Lm1hcChwPT5gPGRpdiBjbGFzcz0icHJvZCI+JHtwLmltYWdlX3VybD9gPGltZyBzcmM9IiR7ZXNjKHAuaW1hZ2VfdXJsKX0iPmA6IiJ9PGRpdiBjbGFzcz0icGJvZHkiPjxiPiR7ZXNjKHAubmFtZSl9PC9iPjxkaXYgY2xhc3M9Im11dGVkIj4ke2VzYyhwLmRlc2NyaXB0aW9ufHwiIil9PC9kaXY+PC9kaXY+PGJ1dHRvbiBjbGFzcz0iZGFuZ2VyIiBvbmNsaWNrPSJkZWxQcm9kdWN0KCR7cC5pZH0pIj7Yrdiw2YE8L2J1dHRvbj48L2Rpdj5gKS5qb2luKCIiKXx8ItmE2Kcg2KrZiNis2K8g2YXZhtiq2KzYp9iqLiIKICAgICAgICAgICB9Y2F0Y2goZSl7bWwuaW5uZXJIVE1MPSLYqti52LDYsSDYqtit2YXZitmEINin2YTZhdmG2KrYrNin2KouIn0KICAgICAgICAgIH0KICAgICAgICAgIGFzeW5jIGZ1bmN0aW9uIGFkZFByb2R1Y3QoKXsKICAgICAgICAgICB0cnl7YXdhaXQgYXBpKCIvcmVzdC92MS9wcm9kdWN0cyIse21ldGhvZDoiUE9TVCIsaGVhZGVyczp7IlByZWZlciI6InJldHVybj1taW5pbWFsIn0sYm9keTpKU09OLnN0cmluZ2lmeSh7c2VjdGlvbl9pZDpOdW1iZXIoYXMudmFsdWUpLG5hbWU6YW4udmFsdWUudHJpbSgpLGRlc2NyaXB0aW9uOmFkLnZhbHVlLnRyaW0oKXx8bnVsbCxpbWFnZV91cmw6YWkudmFsdWUudHJpbSgpfHxudWxsLHNvcnRfb3JkZXI6TnVtYmVyKGFvLnZhbHVlfHwwKSxpc19hY3RpdmU6dHJ1ZX0pfSk7CiAgICAgICAgICAgYWxlcnQoItiq2YXYqiDYpdi22KfZgdipINin2YTZhdmG2KrYrC4iKTthbi52YWx1ZT0iIjthZC52YWx1ZT0iIjthaS52YWx1ZT0iIjttYW5hZ2VQcm9kdWN0cygpCiAgICAgICAgICAgfWNhdGNoKGUpe2FsZXJ0KCLYqti52LDYsSDYpdi22KfZgdipINin2YTZhdmG2KrYrDogIitlLm1lc3NhZ2UpfQogICAgICAgICAgfQogICAgICAgICAgYXN5bmMgZnVuY3Rpb24gZGVsUHJvZHVjdChpZCl7CiAgICAgICAgICAgaWYoIWNvbmZpcm0oItmH2YQg2KrYsdmK2K8g2K3YsNmBINin2YTZhdmG2KrYrNifIikpcmV0dXJuOwogICAgICAgICAgIHRyeXthd2FpdCBhcGkoIi9yZXN0L3YxL3Byb2R1Y3RzP2lkPWVxLiIraWQse21ldGhvZDoiREVMRVRFIn0pO21hbmFnZVByb2R1Y3RzKCl9Y2F0Y2goZSl7YWxlcnQoItiq2LnYsNixINit2LDZgSDYp9mE2YXZhtiq2Kw6ICIrZS5tZXNzYWdlKX0KICAgICAgICAgIH0KICAgICAgICAgIGZ1bmN0aW9uIGxlZ2FjeSgpewogICAgICAgICAgICBjb25zdCByPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJoYiIpOwogICAgICAgICAgICBpZihyKXIuc3R5bGUuZGlzcGxheT0ibm9uZSI7CiAgICAgICAgICAgIGxlZ2FjeU5vZGVzLmZvckVhY2gobj0+bi5zdHlsZS5kaXNwbGF5PSIiKTsKICAgICAgICAgICAgd2luZG93LnNjcm9sbFRvKDAsMCk7CiAgICAgICAgICB9CiAgICAgICAgICB3aW5kb3cub3BlblNlYz1vcGVuU2VjO3dpbmRvdy5ob21lPWhvbWU7d2luZG93LmFjY291bnQ9YWNjb3VudDt3aW5kb3cuc2lnbnVwPXNpZ251cDt3aW5kb3cubG9naW49bG9naW47d2luZG93LmxvZ291dD1sb2dvdXQ7d2luZG93LmFkbWluUGFuZWw9YWRtaW5QYW5lbDt3aW5kb3cubWFuYWdlUHJvZHVjdHM9bWFuYWdlUHJvZHVjdHM7d2luZG93LmFkZFByb2R1Y3Q9YWRkUHJvZHVjdDt3aW5kb3cuZGVsUHJvZHVjdD1kZWxQcm9kdWN0O3dpbmRvdy5sZWdhY3k9bGVnYWN5O3dpbmRvdy50cmFjaz10cmFjazsKICAgICAgICAgIAogICAgICAgICAgZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcigiRE9NQ29udGVudExvYWRlZCIsYXN5bmMoKT0+ewogICAgICAgICAgIGF3YWl0IGxvYWRTZWN0aW9ucygpO2F3YWl0IGNoZWNrQWRtaW4oKTthd2FpdCB0cmFjaygiYXBwX29wZW4iKTtob21lKCk7CiAgICAgICAgICB9KTs= | base64 -d > "$PROJECT_DIR/app/src/main/assets/catalog/online.js"
+
+
+      - name: Fix account loading state
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path(r"$PROJECT_DIR/app/src/main/assets/catalog/online.js")
+          p = Path("$PROJECT_DIR/app/src/main/assets/catalog/online.js")
           s = p.read_text(encoding="utf-8")
-
-          start = s.index("async function signup()")
-          end = s.index("function logout()", start)
-
-          replacement = '''async function signup(){
-            const btn=document.querySelector('button[onclick="signup()"]');
-            const originalText=btn?btn.textContent:"إنشاء الحساب";
-            try{
-              if(btn){
-                btn.disabled=true;
-                btn.textContent="جاري إنشاء الحساب...";
-                btn.style.opacity="0.65";
-              }
-              const f={
-                full_name:document.getElementById("sn").value.trim(),
-                phone:document.getElementById("sp").value.trim(),
-                shop_name:document.getElementById("ss").value.trim(),
-                city:document.getElementById("sc").value.trim(),
-                email:document.getElementById("se").value.trim(),
-                password:document.getElementById("sw").value
-              };
-              if(!f.full_name||!f.email||f.password.length<6){
-                return alert("أكمل البيانات وكلمة المرور 6 أحرف على الأقل.");
-              }
-              const d=await api("/auth/v1/signup",{
-                method:"POST",
-                body:JSON.stringify({email:f.email,password:f.password})
-              });
-              if(!d.access_token){
-                return alert("تم إنشاء الحساب. إذا طُلب تأكيد البريد، افتح رسالة التأكيد ثم سجّل الدخول.");
-              }
-              token=d.access_token;
-              user=d.user;
-              localStorage.setItem("habashy_token",token);
-              localStorage.setItem("habashy_user",JSON.stringify(user));
-              await api("/rest/v1/customer_profiles",{
-                method:"POST",
-                headers:{"Prefer":"resolution=merge-duplicates"},
-                body:JSON.stringify({
-                  id:user.id,
-                  full_name:f.full_name,
-                  phone:f.phone||null,
-                  shop_name:f.shop_name||null,
-                  city:f.city||null,
-                  last_seen_at:new Date().toISOString()
-                })
-              });
-              await track("signup");
-              await checkAdmin();
-              home();
-            }catch(e){
-              alert("تعذر إنشاء الحساب: "+e.message);
-            }finally{
-              if(btn){
-                btn.disabled=false;
-                btn.textContent=originalText;
-                btn.style.opacity="1";
-              }
-            }
-          }
-
-          async function login(){
-            try{
-              const email=document.getElementById("le").value.trim();
-              const password=document.getElementById("lw").value;
-              const d=await api("/auth/v1/token?grant_type=password",{
-                method:"POST",
-                body:JSON.stringify({email,password})
-              });
-              token=d.access_token;
-              user=d.user;
-              localStorage.setItem("habashy_token",token);
-              localStorage.setItem("habashy_user",JSON.stringify(user));
-              await checkAdmin();
-              await track("login");
-              home();
-            }catch(e){
-              alert("تعذر تسجيل الدخول: "+e.message);
-            }
-          }
-
-          '''
-          s = s[:start] + replacement + s[end:]
-          p.write_text(s, encoding="utf-8")
+          marker = "async function signup(){"
+          if marker in s:
+              start = s.index(marker)
+              end = s.index("function logout()", start)
+              replacement = """async function signup(){ const btn=document.querySelector('button[onclick="signup()"]'); const originalText=btn?btn.textContent:"إنشاء الحساب"; try{ if(btn){ btn.disabled=true; btn.textContent="جاري إنشاء الحساب..."; btn.style.opacity="0.65"; } const f={ full_name:document.getElementById("sn").value.trim(), phone:document.getElementById("sp").value.trim(), shop_name:document.getElementById("ss").value.trim(), city:document.getElementById("sc").value.trim(), email:document.getElementById("se").value.trim(), password:document.getElementById("sw").value }; if(!f.full_name||!f.email||f.password.length<6){ return alert("أكمل البيانات وكلمة المرور 6 أحرف على الأقل."); } const d=await api("/auth/v1/signup",{ method:"POST", body:JSON.stringify({email:f.email,password:f.password}) }); if(!d.access_token){ return alert("تم إنشاء الحساب. إذا طُلب تأكيد البريد، افتح رسالة التأكيد ثم سجّل الدخول."); } token=d.access_token; user=d.user; localStorage.setItem("habashy_token",token); localStorage.setItem("habashy_user",JSON.stringify(user)); await api("/rest/v1/customer_profiles",{ method:"POST", headers:{"Prefer":"resolution=merge-duplicates"}, body:JSON.stringify({ id:user.id, full_name:f.full_name, phone:f.phone||null, shop_name:f.shop_name||null, city:f.city||null, last_seen_at:new Date().toISOString() }) }); await track("signup"); await checkAdmin(); home(); }catch(e){ alert("تعذر إنشاء الحساب: "+e.message); }finally{ if(btn){ btn.disabled=false; btn.textContent=originalText; btn.style.opacity="1"; } } } """
+              s = s[:start] + replacement + s[end:]
+              p.write_text(s, encoding="utf-8")
           PY
+
+      - name: Update MainActivity
+        run: |
+          echo ICAgICAgICAgICAgICAgICAgICBwYWNrYWdlIGNvbS5oYWJhc2h5LmNhdGFsb2c7CiAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICBpbXBvcnQgYW5kcm9pZC5hcHAuQWN0aXZpdHk7CiAgICAgICAgICAgICAgICAgICAgaW1wb3J0IGFuZHJvaWQub3MuQnVuZGxlOwogICAgICAgICAgICAgICAgICAgIGltcG9ydCBhbmRyb2lkLmdyYXBoaWNzLkNvbG9yOwogICAgICAgICAgICAgICAgICAgIGltcG9ydCBhbmRyb2lkLndlYmtpdC5XZWJTZXR0aW5nczsKICAgICAgICAgICAgICAgICAgICBpbXBvcnQgYW5kcm9pZC53ZWJraXQuV2ViVmlldzsKICAgICAgICAgICAgICAgICAgICBpbXBvcnQgYW5kcm9pZC53ZWJraXQuV2ViVmlld0NsaWVudDsKICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgIHB1YmxpYyBjbGFzcyBNYWluQWN0aXZpdHkgZXh0ZW5kcyBBY3Rpdml0eSB7CiAgICAgICAgICAgICAgICAgICAgICAgIHByaXZhdGUgV2ViVmlldyB3ZWJWaWV3OwogICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgIEBPdmVycmlkZQogICAgICAgICAgICAgICAgICAgICAgICBwcm90ZWN0ZWQgdm9pZCBvbkNyZWF0ZShCdW5kbGUgc2F2ZWRJbnN0YW5jZVN0YXRlKSB7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBzdXBlci5vbkNyZWF0ZShzYXZlZEluc3RhbmNlU3RhdGUpOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgZ2V0V2luZG93KCkuc2V0U3RhdHVzQmFyQ29sb3IoQ29sb3IucmdiKDE2LCAyNCwgMzkpKTsKICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgd2ViVmlldyA9IG5ldyBXZWJWaWV3KHRoaXMpOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgV2ViU2V0dGluZ3Mgc2V0dGluZ3MgPSB3ZWJWaWV3LmdldFNldHRpbmdzKCk7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBzZXR0aW5ncy5zZXRKYXZhU2NyaXB0RW5hYmxlZCh0cnVlKTsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHNldHRpbmdzLnNldERvbVN0b3JhZ2VFbmFibGVkKHRydWUpOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgc2V0dGluZ3Muc2V0QnVpbHRJblpvb21Db250cm9scyhmYWxzZSk7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBzZXR0aW5ncy5zZXREaXNwbGF5Wm9vbUNvbnRyb2xzKGZhbHNlKTsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHNldHRpbmdzLnNldExvYWRXaXRoT3ZlcnZpZXdNb2RlKGZhbHNlKTsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHNldHRpbmdzLnNldFVzZVdpZGVWaWV3UG9ydCh0cnVlKTsKICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgd2ViVmlldy5zZXRCYWNrZ3JvdW5kQ29sb3IoQ29sb3IucmdiKDI0NSwgMjQ2LCAyNDgpKTsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHdlYlZpZXcuc2V0V2ViVmlld0NsaWVudChuZXcgV2ViVmlld0NsaWVudCgpKTsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHNldENvbnRlbnRWaWV3KHdlYlZpZXcpOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgd2ViVmlldy5sb2FkVXJsKCJmaWxlOi8vL2FuZHJvaWRfYXNzZXQvY2F0YWxvZy9pbmRleC5odG1sIik7CiAgICAgICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICBAT3ZlcnJpZGUKICAgICAgICAgICAgICAgICAgICAgICAgcHVibGljIHZvaWQgb25CYWNrUHJlc3NlZCgpIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIGlmICh3ZWJWaWV3ICE9IG51bGwgJiYgd2ViVmlldy5jYW5Hb0JhY2soKSkgewogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHdlYlZpZXcuZ29CYWNrKCk7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICB9IGVsc2UgewogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHN1cGVyLm9uQmFja1ByZXNzZWQoKTsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgICAgIH0= | base64 -d > "$PROJECT_DIR/app/src/main/java/com/habashy/catalog/MainActivity.java"
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Set up Android SDK
+        run: |
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -1)
+          if [ -z "$SDKMANAGER" ]; then echo "sdkmanager not found"; exit 1; fi
+          yes | "$SDKMANAGER" --licenses || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Build APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Verify APK
+        run: |
+          find "$PROJECT_DIR/app/build/outputs/apk" -type f -name "*.apk" -print
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HABASHY-APK-V23
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
