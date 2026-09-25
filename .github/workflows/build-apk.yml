@@ -18,8 +18,7 @@ jobs:
         run: |
           unzip -q HABASHY_Android_Project_V18.zip -d extracted
 
-      - name: Locate project      - name: Locate project
-        run: |
+      - name: Locate project      
           SETTINGS=$(find extracted -type f -name "settings.gradle" | head -1)
 
           if [ -z "$SETTINGS" ]; then
