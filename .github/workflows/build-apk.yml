@@ -30,7 +30,25 @@ jobs:
           PROJECT_DIR=$(dirname "$SETTINGS")
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Project directory: $PROJECT_DIR"
+      - name: Fix Java source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
 
+          p = Path("extracted/HABASHYAndroid/app/src/main/java/com/habashy/catalog/MainActivity.java")
+          s = p.read_text(encoding="utf-8")
+
+          old = '''i.putExtra(Intent.EXTRA_TEXT,"تطبيق الحبشي HABASHY – فرع أبـيـس
+كتالوج ومنتجات وطلبات");'''
+
+          new = '''i.putExtra(Intent.EXTRA_TEXT,"تطبيق الحبشي HABASHY – فرع أبـيـس\\nكتالوج ومنتجات وطلبات");'''
+
+          if old not in s:
+              raise SystemExit("Target Java text was not found")
+
+          p.write_text(s.replace(old, new), encoding="utf-8")
+          print("Java source fixed successfully")
+          PY
       - name: Set up Java 21
         uses: actions/setup-java@v5
         with:
