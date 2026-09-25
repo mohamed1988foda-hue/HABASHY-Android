@@ -1,4 +1,4 @@
-name: Build HABASHY APK V23
+name: Build HABASHY APK V24
 on:
   push:
     branches:
@@ -35,7 +35,8 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path("$PROJECT_DIR/app/src/main/assets/catalog/online.js")
+          import os
+          p = Path(os.environ["PROJECT_DIR"]) / "app/src/main/assets/catalog/online.js"
           s = p.read_text(encoding="utf-8")
           marker = "async function signup(){"
           if marker in s:
@@ -80,6 +81,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: HABASHY-APK-V23
+          name: HABASHY-APK-V24
           path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
