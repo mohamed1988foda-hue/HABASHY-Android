@@ -20,7 +20,85 @@ jobs:
           unzip -q HABASHY_Android_Project_V18.zip -d extracted
           PROJECT_DIR=$(dirname "$(find extracted -type f -name settings.gradle | head -1)")
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+      - name: Enable Internet
+        run: |
+          MANIFEST="$PROJECT_DIR/app/src/main/AndroidManifest.xml"
+          if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
+            sed -i 's#<manifest #<manifest #' "$MANIFEST"
+            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"/>' "$MANIFEST"
+          fi
 
+      - name: Prepare Online Catalog
+        run: |
+          mkdir -p "$PROJECT_DIR/app/src/main/assets/catalog"
+
+          cat > "$PROJECT_DIR/app/src/main/assets/catalog/online.js" <<'EOF'
+          const SUPABASE_URL = "https://tgisywrlmmwlcgqmvjpf.supabase.co";
+          const SUPABASE_KEY = "sb_publishable_KTLWxGdoFz702QcSjPkUwQ_r5lLlxEj";
+
+          const habashySupabase =
+            window.supabase.createClient(
+              SUPABASE_URL,
+              SUPABASE_KEY
+            );
+
+          function habashyInstallationId() {
+            let id = localStorage.getItem("habashy_installation_id");
+
+            if (!id) {
+              id = crypto.randomUUID();
+              localStorage.setItem(
+                "habashy_installation_id",
+                id
+              );
+            }
+
+            return id;
+          }
+
+          async function habashyTrack(
+            eventType,
+            sectionId = null,
+            productName = null
+          ) {
+            try {
+              const session =
+                await habashySupabase.auth.getSession();
+
+              const userId =
+                session.data.session?.user?.id || null;
+
+              await habashySupabase
+                .from("analytics_events")
+                .insert({
+                  user_id: userId,
+                  installation_id:
+                    habashyInstallationId(),
+                  event_type: eventType,
+                  section_id: sectionId,
+                  product_name: productName
+                });
+
+              if (userId) {
+                await habashySupabase
+                  .from("customer_profiles")
+                  .update({
+                    last_seen_at:
+                      new Date().toISOString()
+                  })
+                  .eq("id", userId);
+              }
+            } catch (e) {
+              console.log("Analytics error", e);
+            }
+          }
+
+          habashyTrack("app_open");
+          EOF
+
+          if ! grep -q "online.js" "$PROJECT_DIR/app/src/main/assets/catalog/index.html"; then
+            sed -i 's#</body>#<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="online.js"></script></body>#' "$PROJECT_DIR/app/src/main/assets/catalog/index.html"
+          fi
       - name: Update MainActivity
         run: |
           cat > "$PROJECT_DIR/app/src/main/java/com/habashy/catalog/MainActivity.java" <<'EOF'
