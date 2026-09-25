@@ -26,10 +26,9 @@ jobs:
           fi
           PROJECT_DIR=$(dirname "$SETTINGS")
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-
       - name: Fix Java source
         run: |
-          FILE="extracted/HABASHYAndroid/app/src/main/java/com/habashy/catalog/MainActivity.java"
+          FILE="$PROJECT_DIR/app/src/main/java/com/habashy/catalog/MainActivity.java"
           sed -i ':a;N;$!ba;s/تطبيق الحبشي HABASHY – فرع أبـيـس\nكتالوج ومنتجات وطلبات/تطبيق الحبشي HABASHY – فرع أبـيـس\\\\nكتالوج ومنتجات وطلبات/' "$FILE"
 
       - name: Set up Java 21
