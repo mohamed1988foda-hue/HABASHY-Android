@@ -1,280 +1,154 @@
-name: Build HABASHY APK V22
+name: Build HABASHY APK V23
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Extract project
         run: |
           unzip -q HABASHY_Android_Project_V18.zip -d extracted
-
           PROJECT_DIR=$(dirname "$(find extracted -type f -name settings.gradle | head -1)")
-
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Enable Internet
         run: |
           MANIFEST="$PROJECT_DIR/app/src/main/AndroidManifest.xml"
-
           if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
-            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"/>' "$MANIFEST"
+            sed -i '/<manifest/a\ <uses-permission android:name="android.permission.INTERNET"/>' "$MANIFEST"
           fi
 
-      - name: Prepare Online Catalog
+      - name: Install V23 online interface
         run: |
           mkdir -p "$PROJECT_DIR/app/src/main/assets/catalog"
 
+          if ! grep -q 'src="online.js"' "$PROJECT_DIR/app/src/main/assets/catalog/index.html"; then
+            sed -i 's#</body>#<script src="online.js"></script></body>#' "$PROJECT_DIR/app/src/main/assets/catalog/index.html"
+          fi
+
           cat > "$PROJECT_DIR/app/src/main/assets/catalog/online.js" <<'EOF'
-          const HABASHY_SUPABASE_URL =
-            "https://tgisywrlmmwlcgqmvjpf.supabase.co";
-
-          const HABASHY_SUPABASE_KEY =
-            "sb_publishable_KTLWxGdoFz702QcSjPkUwQ_r5lLlxEj";
-
-          function habashyInstallationId() {
-
-              let id = localStorage.getItem(
-                  "habashy_installation_id"
-              );
-
-              if (!id) {
-
-                  id =
-                      "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-                      .replace(/[xy]/g, function(c) {
-
-                          const r =
-                              Math.random() * 16 | 0;
-
-                          const v =
-                              c === "x"
-                                  ? r
-                                  : (r & 0x3 | 0x8);
-
-                          return v.toString(16);
-                      });
-
-                  localStorage.setItem(
-                      "habashy_installation_id",
-                      id
-                  );
-              }
-
-              return id;
-          }
-
-          async function habashyTrack(
-              eventType,
-              sectionId = null,
-              productName = null
-          ) {
-
-              try {
-
-                  const response = await fetch(
-                      HABASHY_SUPABASE_URL +
-                      "/rest/v1/analytics_events",
-                      {
-                          method: "POST",
-
-                          headers: {
-                              "apikey":
-                                  HABASHY_SUPABASE_KEY,
-
-                              "Authorization":
-                                  "Bearer " +
-                                  HABASHY_SUPABASE_KEY,
-
-                              "Content-Type":
-                                  "application/json",
-
-                              "Prefer":
-                                  "return=minimal"
-                          },
-
-                          body: JSON.stringify({
-                              installation_id:
-                                  habashyInstallationId(),
-
-                              event_type:
-                                  eventType,
-
-                              section_id:
-                                  sectionId,
-
-                              product_name:
-                                  productName,
-
-                              metadata: {
-                                  source:
-                                      "android_app"
-                              }
-                          })
-                      }
-                  );
-
-                  console.log(
-                      "HABASHY analytics status:",
-                      response.status
-                  );
-
-              } catch (error) {
-
-                  console.log(
-                      "HABASHY analytics error:",
-                      error
-                  );
-              }
-          }
-
-          habashyTrack("app_open");
-          EOF
-
-          if ! grep -q "online.js" "$PROJECT_DIR/app/src/main/assets/catalog/index.html"; then
-
-            sed -i 's#</body>#<script src="online.js"></script></body>#' \
-              "$PROJECT_DIR/app/src/main/assets/catalog/index.html"
-
-          fi
-
-      - name: Update MainActivity
-        run: |
-          cat > "$PROJECT_DIR/app/src/main/java/com/habashy/catalog/MainActivity.java" <<'EOF'
-          package com.habashy.catalog;
-
-          import android.app.Activity;
-          import android.os.Bundle;
-          import android.graphics.Color;
-          import android.webkit.WebSettings;
-          import android.webkit.WebView;
-          import android.webkit.WebViewClient;
-
-          public class MainActivity extends Activity {
-
-              private WebView webView;
-
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-
-                  getWindow().setStatusBarColor(
-                      Color.rgb(16, 24, 39)
-                  );
-
-                  webView = new WebView(this);
-
-                  WebSettings settings =
-                      webView.getSettings();
-
-                  settings.setJavaScriptEnabled(true);
-                  settings.setDomStorageEnabled(true);
-
-                  settings.setBuiltInZoomControls(false);
-                  settings.setDisplayZoomControls(false);
-
-                  settings.setLoadWithOverviewMode(false);
-                  settings.setUseWideViewPort(true);
-
-                  webView.setBackgroundColor(
-                      Color.rgb(245, 246, 248)
-                  );
-
-                  webView.setWebViewClient(
-                      new WebViewClient()
-                  );
-
-                  setContentView(webView);
-
-                  webView.loadUrl(
-                      "file:///android_asset/catalog/index.html"
-                  );
-              }
-
-              @Override
-              public void onBackPressed() {
-
-                  if (
-                      webView != null &&
-                      webView.canGoBack()
-                  ) {
-
-                      webView.goBack();
-
-                  } else {
-
-                      super.onBackPressed();
-
-                  }
-              }
-          }
-          EOF
-
-      - name: Set up Java 21
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.11.1'
-
-      - name: Set up Android SDK
-        run: |
-
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" \
-            -type f \
-            -name sdkmanager \
-            | head -1)
-
-          if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager not found"
-            exit 1
-          fi
-
-          yes | "$SDKMANAGER" --licenses || true
-
-          "$SDKMANAGER" \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
-
-      - name: Build APK
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: |
-
-          gradle assembleDebug \
-            --no-daemon \
-            --stacktrace
-
-      - name: Verify APK
-        run: |
-
-          echo "APK files:"
-
-          find "$PROJECT_DIR/app/build/outputs/apk" \
-            -type f \
-            -name "*.apk" \
-            -print
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: HABASHY-APK-V22
-
-          path: |
-            ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
-
-          if-no-files-found: error
+const SB_URL="https://tgisywrlmmwlcgqmvjpf.supabase.co";
+const SB_KEY="sb_publishable_KTLWxGdoFz702QcSjPkUwQ_r5lLlxEj";
+
+let token=localStorage.getItem("habashy_token")||"";
+let user=JSON.parse(localStorage.getItem("habashy_user")||"null");
+let admin=false, sections=[], products=[];
+
+const fallback=[
+[1,"قفل بأنواعه"],[2,"خرطوم"],[3,"صنفرة ولوازمها"],[4,"أسلاك بأنواعها"],
+[5,"حدايد بلدي"],[6,"مسامير بأنواعه"],[7,"عدد ديكورية ومنتجات ديكور"],
+[8,"أكر وإكسسوارات"],[9,"كوالين بأنواعها وسيلندرات"],[10,"خشب وسلالم"],
+[11,"عدد بأنواعها وأدوات ومستلزمات"],[12,"مواسير ستائر ولوازمها"],
+[13,"مفصلات ولوازم نجارة صيني"]];
+
+function esc(x){return String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+async function api(path,opt={}){
+  const h={"apikey":SB_KEY,"Content-Type":"application/json",...(opt.headers||{})};
+  if(token)h.Authorization="Bearer "+token;
+  const r=await fetch(SB_URL+path,{...opt,headers:h});
+  const t=await r.text(); let d=null; try{d=t?JSON.parse(t):null}catch(e){}
+  if(!r.ok)throw Error(d?.message||d?.error_description||t||("HTTP "+r.status));
+  return d;
+}
+function iid(){
+  let x=localStorage.getItem("habashy_installation_id");
+  if(!x){x=crypto.randomUUID();localStorage.setItem("habashy_installation_id",x)}
+  return x;
+}
+async function track(type,section_id=null,product_name=null){
+  try{await api("/rest/v1/analytics_events",{method:"POST",headers:{"Prefer":"return=minimal"},
+    body:JSON.stringify({installation_id:iid(),user_id:user?.id||null,event_type:type,section_id,product_name,metadata:{version:"V23",source:"android_app"}})})}catch(e){}
+}
+async function loadSections(){
+  try{sections=await api("/rest/v1/catalog_sections?select=id,section_number,name,page_start,page_end&is_active=eq.true&order=section_number")}
+  catch(e){sections=[]}
+  if(!sections.length)sections=fallback.map(x=>({id:null,section_number:x[0],name:x[1]}));
+}
+async function loadProducts(id){
+  products=id?await api("/rest/v1/products?select=id,section_id,name,description,image_url,sort_order,is_active&section_id=eq."+id+"&order=sort_order,name"):[]}
+async function checkAdmin(){
+  admin=false;
+  if(!token||!user)return;
+  try{const x=await api("/rest/v1/app_admins?select=user_id&user_id=eq."+user.id+"&is_active=eq.true");admin=x.length>0}catch(e){}
+}
+function css(){return `<style> *{box-sizing:border-box}body{margin:0;background:#f3f5f8;font-family:Arial,Tahoma;color:#172033} #hb{min-height:100vh}.bar{background:#101827;color:white;padding:18px}.wrap{max-width:900px;margin:auto;padding:16px} .brand{font-size:24px;font-weight:800}.sub{opacity:.8;margin-top:5px;font-size:13px} .hero,.card,.prod{background:white;border-radius:16px;box-shadow:0 2px 10px #0001} .hero{padding:18px;margin-bottom:14px}.title{font-size:22px;font-weight:800;margin-bottom:7px} .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}.card{padding:16px;text-align:right;border:0;min-height:88px} .card b{display:block;font-size:16px;margin-bottom:6px}.muted{color:#667085;font-size:13px} button{border:0;border-radius:11px;padding:11px 14px;font-weight:700;margin:3px;cursor:pointer} .primary{background:#101827;color:#fff}.gold{background:#c9a227;color:#fff}.light{background:#eef1f5;color:#172033}.danger{background:#b42318;color:white} input,textarea,select{width:100%;padding:12px;border:1px solid #d8dde6;border-radius:10px;margin:5px 0 10px;background:white} label{font-size:13px;font-weight:bold}.prod{display:flex;gap:11px;padding:10px;margin:9px 0;align-items:center} .prod img{width:75px;height:75px;object-fit:contain;border-radius:9px}.pbody{flex:1} @media(min-width:650px){.grid{grid-template-columns:repeat(3,1fr)}} </style>`}
+
+let legacyNodes=[];
+function mount(body){
+  legacyNodes.forEach(n=>n.style.display="none");
+  let r=document.getElementById("hb");
+  if(!r){
+    r=document.createElement("div"); r.id="hb"; document.body.appendChild(r);
+  }
+  r.innerHTML=css()+`<div class="bar"><div class="wrap" style="padding:0"><div class="brand">الحبشي للبويات والحدايد</div><div class="sub">HABASHY — فرع أبيس</div></div></div>${body}`;
+  r.style.display="block";
+}
+function shell(body){mount(body)}
+
+function home(){
+ shell(`<div class="wrap"><div class="hero"><div class="title">فهرس الكتالوج</div><div class="muted">اختر القسم لعرض محتوياته.</div></div> <div class="grid">${sections.map(s=>`<button class="card" onclick="openSec(${s.id||0},${s.section_number})"><b>${esc(s.name)}</b><span class="muted">القسم ${s.section_number}${s.page_start?` • ${s.page_start}–${s.page_end}`:""}</span></button>`).join("")}</div> <div class="hero"><b>الحساب والكتالوج</b><br> <button class="primary" onclick="account()">👤 حساب العميل</button> ${admin?`<button class="gold" onclick="adminPanel()">⚙️ لوحة الإدارة</button>`:""} <button class="light" onclick="legacy()">📖 الكتالوج الكامل 475 صفحة</button></div></div>`);
+}
+async function openSec(id,num){
+ if(id)await loadProducts(id);else products=[];
+ await track("section_open",id||null,null);
+ const s=sections.find(x=>x.id===id)||sections.find(x=>x.section_number===num);
+ shell(`<div class="wrap"><button class="light" onclick="home()">← الفهرس</button> <div class="hero"><div class="title">${esc(s?.name||"القسم")}</div><div class="muted">القسم ${num}</div></div> ${products.length?products.map(p=>`<div class="prod" onclick="track('product_open',${p.section_id},'${esc(p.name)}')"> ${p.image_url?`<img src="${esc(p.image_url)}">`:""}<div class="pbody"><b>${esc(p.name)}</b><div class="muted">${esc(p.description||"")}</div></div></div>`).join(""):`<div class="hero">لا توجد منتجات مضافة لهذا القسم حاليًا.</div>`}</div>`);
+}
+function account(){
+ shell(`<div class="wrap"><button class="light" onclick="home()">← الفهرس</button> ${user?`<div class="hero"><div class="title">حسابي</div><b>${esc(user.email)}</b><br> <button class="danger" onclick="logout()">تسجيل الخروج</button>${admin?`<button class="gold" onclick="adminPanel()">⚙️ لوحة الإدارة</button>`:""}</div>`: `<div class="hero"><div class="title">إنشاء حساب</div> <label>الاسم الكامل</label><input id="sn"><label>الهاتف</label><input id="sp"><label>المحل / الشركة</label><input id="ss"><label>المدينة</label><input id="sc" value="الإسكندرية"><label>البريد الإلكتروني</label><input id="se" type="email"><label>كلمة المرور</label><input id="sw" type="password"><button class="primary" onclick="signup()">إنشاء الحساب</button></div> <div class="hero"><div class="title">تسجيل الدخول</div><input id="le" type="email" placeholder="البريد الإلكتروني"><input id="lw" type="password" placeholder="كلمة المرور"><button class="gold" onclick="login()">تسجيل الدخول</button></div>`}</div>`);
+}
+async function signup(){
+ try{
+  const f={full_name:sn.value.trim(),phone:sp.value.trim(),shop_name:ss.value.trim(),city:sc.value.trim(),email:se.value.trim(),password:sw.value};
+  if(!f.full_name||!f.email||f.password.length<6)return alert("أكمل البيانات وكلمة المرور 6 أحرف على الأقل.");
+  const d=await api("/auth/v1/signup",{method:"POST",body:JSON.stringify({email:f.email,password:f.password})});
+  if(!d.access_token)return alert("تم إنشاء الحساب. إذا طُلب تأكيد البريد، أكد البريد ثم سجل الدخول.");
+  token=d.access_token;user=d.user;localStorage.setItem("habashy_token",token);localStorage.setItem("habashy_user",JSON.stringify(user));
+  await api("/rest/v1/customer_profiles",{method:"POST",headers:{"Prefer":"resolution=merge-duplicates"},body:JSON.stringify({id:user.id,full_name:f.full_name,phone:f.phone||null,shop_name:f.shop_name||null,city:f.city||null,last_seen_at:new Date().toISOString()})});
+  await track("signup");await checkAdmin();home();
+ }catch(e){alert("تعذر إنشاء الحساب: "+e.message)}
+}
+async function login(){
+ try{const d=await api("/auth/v1/token?grant_type=password",{method:"POST",body:JSON.stringify({email:le.value.trim(),password:lw.value})});
+ token=d.access_token;user=d.user;localStorage.setItem("habashy_token",token);localStorage.setItem("habashy_user",JSON.stringify(user));
+ await checkAdmin();await track("login");home()
+ }catch(e){alert("تعذر تسجيل الدخول: "+e.message)}
+}
+function logout(){token="";user=null;admin=false;localStorage.removeItem("habashy_token");localStorage.removeItem("habashy_user");home()}
+async function adminPanel(){
+ if(!admin)return alert("غير مصرح.");
+ shell(`<div class="wrap"><button class="light" onclick="home()">← الرئيسية</button><div class="hero"><div class="title">⚙️ لوحة الإدارة</div><div class="muted">إضافة وحذف منتجات الكتالوج</div></div> <div class="hero"><b>إضافة منتج</b><label>القسم</label><select id="as">${sections.map(s=>`<option value="${s.id}">${s.section_number} — ${esc(s.name)}</option>`).join("")}</select> <label>اسم المنتج</label><input id="an"><label>الوصف</label><textarea id="ad"></textarea><label>رابط الصورة</label><input id="ai" placeholder="https://..."><label>الترتيب</label><input id="ao" type="number" value="0"><button class="gold" onclick="addProduct()">➕ إضافة</button></div> <div class="hero"><b>منتجات القسم</b><select id="ms" onchange="manageProducts()">${sections.map(s=>`<option value="${s.id}">${s.section_number} — ${esc(s.name)}</option>`).join("")}</select><div id="ml"></div></div></div>`);
+ manageProducts();
+}
+async function manageProducts(){
+ try{const x=await api("/rest/v1/products?select=id,name,description,image_url,sort_order,is_active&section_id=eq."+ms.value+"&order=sort_order,name");
+ ml.innerHTML=x.map(p=>`<div class="prod">${p.image_url?`<img src="${esc(p.image_url)}">`:""}<div class="pbody"><b>${esc(p.name)}</b><div class="muted">${esc(p.description||"")}</div></div><button class="danger" onclick="delProduct(${p.id})">حذف</button></div>`).join("")||"لا توجد منتجات."
+ }catch(e){ml.innerHTML="تعذر تحميل المنتجات."}
+}
+async function addProduct(){
+ try{await api("/rest/v1/products",{method:"POST",headers:{"Prefer":"return=minimal"},body:JSON.stringify({section_id:Number(as.value),name:an.value.trim(),description:ad.value.trim()||null,image_url:ai.value.trim()||null,sort_order:Number(ao.value||0),is_active:true})});
+ alert("تمت إضافة المنتج.");an.value="";ad.value="";ai.value="";manageProducts()
+ }catch(e){alert("تعذر إضافة المنتج: "+e.message)}
+}
+async function delProduct(id){
+ if(!confirm("هل تريد حذف المنتج؟"))return;
+ try{await api("/rest/v1/products?id=eq."+id,{method:"DELETE"});manageProducts()}catch(e){alert("تعذر حذف المنتج: "+e.message)}
+}
+function legacy(){
+  const r=document.getElementById("hb");
+  if(r)r.style.display="none";
+  legacyNodes.forEach(n=>n.style.display="");
+  window.scrollTo(0,0);
+}
+window.openSec=openSec;window.home=home;window.account=account;window.signup=signup;window.login=login;window.logout=logout;window.adminPanel=adminPanel;window.manageProducts=manageProducts;window.addProduct=addProduct;window.delProduct=delProduct;window.legacy=legacy;window.track=track;
+
+document.addEventListener("DOMContentLoaded",async()=>{
+ await loadSections();await checkAdmin();await track("app_open");home();
+});
