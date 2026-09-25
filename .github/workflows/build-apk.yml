@@ -2,8 +2,7 @@ name: Build HABASHY APK V20
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -15,33 +14,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract Android project
+      - name: Extract project
         run: |
           unzip -q HABASHY_Android_Project_V18.zip -d extracted
+          echo "PROJECT_DIR=$(dirname "$(find extracted -type f -name settings.gradle | head -1)")" >> "$GITHUB_ENV"
 
-      - name: Locate project
+      - name: Update MainActivity
         run: |
-          SETTINGS=$(find extracted -type f -name "settings.gradle" | head -1)
-
-          if [ -z "$SETTINGS" ]; then
-            SETTINGS=$(find extracted -type f -name "settings.gradle.kts" | head -1)
-          fi
-
-          if [ -z "$SETTINGS" ]; then
-            echo "settings.gradle not found"
-            find extracted -maxdepth 4 -type f | head -100
-            exit 1
-          fi
-
-          PROJECT_DIR=$(dirname "$SETTINGS")
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Project directory: $PROJECT_DIR"
-
-      - name: Rebuild MainActivity
-        run: |
-          FILE="$PROJECT_DIR/app/src/main/java/com/habashy/catalog/MainActivity.java"
-
-          cat > "$FILE" <<'EOF'
+          cat > "$PROJECT_DIR/app/src/main/java/com/habashy/catalog/MainActivity.java" <<'EOF'
           package com.habashy.catalog;
 
           import android.app.Activity;
@@ -52,87 +32,38 @@ jobs:
           import android.webkit.WebViewClient;
 
           public class MainActivity extends Activity {
-
               private WebView webView;
 
               @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-
-                  getWindow().setStatusBarColor(Color.rgb(16, 24, 39));
-
+              protected void onCreate(Bundle b) {
+                  super.onCreate(b);
+                  getWindow().setStatusBarColor(Color.rgb(16,24,39));
                   webView = new WebView(this);
-                  webView.setBackgroundColor(Color.rgb(245, 246, 248));
-
-                  WebSettings settings = webView.getSettings();
-                  settings.setJavaScriptEnabled(true);
-                  settings.setDomStorageEnabled(true);
-                  settings.setBuiltInZoomControls(false);
-                  settings.setDisplayZoomControls(false);
-                  settings.setLoadWithOverviewMode(false);
-                  settings.setUseWideViewPort(true);
-
+                  WebSettings s = webView.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setDomStorageEnabled(true);
                   webView.setWebViewClient(new WebViewClient());
-
                   setContentView(webView);
-
                   webView.loadUrl("file:///android_asset/catalog/index.html");
               }
 
               @Override
               public void onBackPressed() {
-                  if (webView != null && webView.canGoBack()) {
-                      webView.goBack();
-                  } else {
-                      super.onBackPressed();
-                  }
+                  if (webView.canGoBack()) webView.goBack();
+                  else super.onBackPressed();
               }
           }
           EOF
 
-      - name: Rebuild clean catalog home
+      - name: Build APK
+        working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          FILE="$PROJECT_DIR/app/src/main/assets/catalog/index.html"
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
-          cat > "$FILE" <<'EOF'
-          <!DOCTYPE html>
-          <html lang="ar" dir="rtl">
-
-          <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>الحبشي - فرع أبيس</title>
-
-          <style>
-
-          * {
-              box-sizing: border-box;
-          }
-
-          html,
-          body {
-              margin: 0;
-              padding: 0;
-              width: 100%;
-              min-height: 100%;
-          }
-
-          body {
-              font-family: Arial, Tahoma, sans-serif;
-              background: #f3f5f7;
-              color: #172033;
-          }
-
-          .header {
-              background: linear-gradient(135deg, #111827, #26364d);
-              color: white;
-              padding: 28px 18px 24px;
-              text-align: center;
-              box-shadow: 0 3px 14px rgba(0,0,0,.16);
-          }
-
-          .brand-ar {
-              font-size: 34px;
-              font-weight: 900;
-              margin-bottom: 3px;
-          }
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HABASHY-APK-V20
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
